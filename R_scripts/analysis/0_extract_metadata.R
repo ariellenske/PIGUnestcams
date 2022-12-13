@@ -1,6 +1,6 @@
 ###############################################################################
 #project: PIGU nestcam datasheet autofill
-#extract video metadata
+#0. extract video metadata
 #date: Dec 2, 2022
 #author: Ariel Lenske
 ###############################################################################
@@ -19,13 +19,14 @@ outputbasepath <- outputs_loc("PIGUnestcams_outputs")
 #list all the files in the main folder
 drive_ls("PIGU nestbox videos")
 
-#1. pull out the box IDs for a year (currently using 2022 as a test)####
+#1. pull out the box IDs for a year (currently using 2022 as a test)###########
 year <- "2022"
 
 boxIDs <- drive_ls(paste0("PIGU", year)) %>% 
   arrange(name)
 
-#2.pull out the file names for each recording event for each box in that year####
+#2.pull out the file names for each recording event for each box in the selected year###############
+
 revents <- list()
 
 for(i in 1:2){ #need to update for full dataset
@@ -35,14 +36,15 @@ for(i in 1:2){ #need to update for full dataset
     arrange(name)
   
   revents[[boxIDs$name[i]]] <- temp
-    
+  
   print(i)
   
 }
 
 rm(i, temp)
-
-#turn into a dataframe --> this is the main dataframe that will be used to update the video datasheet
+  
+#turn into a dataframe
+#this is the main dataframe that will be used to update the video datasheet
 maindf <- enframe(revents) %>%
   rename(boxID = name) %>%
   unnest(cols = c(boxID, value)) %>%
@@ -50,27 +52,43 @@ maindf <- enframe(revents) %>%
 
 maindf <- maindf[1:10, ] #remove when running on full dataset
 
+  
 #3.loop through each recording event for each nestbox and pull out info on video file names#### 
 vids <- list()
 
-for(i in 1:nrow(maindf)){ 
-  
-  tempvids <- drive_ls(maindf[i,]) %>%
+for(i in 1:nrow(maindf)){
+
+  tempvids <- drive_ls(maindf[i, ]) %>%
     dplyr::select(name) %>%
     dplyr::filter(name != "metadata.txt") %>%
-    arrange(name) %>%
-    mutate(colname = c("video1_filename", "video2_filename")) %>%
-    pivot_wider(names_from = colname, values_from = name)
-  
-  
-  vids[[maindf$ID[i]]] <- tempvids
-  
-  
-  print(i)
-  
-}
+    arrange(name)
 
-rm(i, tempvids)
+  if(nrow(tempvids) == 2) {
+
+    tempvids <- tempvids %>%
+      mutate(colname = c("video1_filename", "video2_filename")) %>%
+      pivot_wider(names_from = colname, values_from = name)
+
+  } else if(nrow(tempvids) == 1) {
+
+    tempvids <- tempvids %>%
+      add_row(name = NA) %>%
+      mutate(colname = c("video1_filename", "video2_filename")) %>%
+      pivot_wider(names_from = colname, values_from = name)
+
+  } else {
+
+    tempvids <- data.frame(video1_filename = NA,
+                           video2_filename = NA)
+
+  }
+
+  vids[[maindf$ID[i]]] <- tempvids
+
+
+  print(i)
+
+}
 
 
 #stick video file names in a df --> will be joined with maindf
