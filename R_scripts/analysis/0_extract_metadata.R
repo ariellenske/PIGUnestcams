@@ -6,17 +6,20 @@
 ###############################################################################
 
 ##Packages
-library(googledrive)
 library(tidyverse)
 library(stringr)
 library(doParallel)
 library(foreach)
+library(readr)
 
 #source functions
 source("R_scripts/functions/outputs_loc.R")
 
 #set data output base path to the projects google drive output folder
 outputbasepath <- outputs_loc("PIGUnestcams_outputs")
+
+#set the path to the PIGU nestbox videos folder in your local google drive location
+pigufp <- file.path("G:", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
 
 #set up stuff for running things in parallel
 parallel::detectCores()
@@ -25,7 +28,7 @@ n.cores <- parallel::detectCores() - 1
 
 #create the cluster
 my.cluster <- parallel::makeCluster(
-  n.cores, 
+  n.cores,
   type = "PSOCK"
 )
 
@@ -36,49 +39,52 @@ print(my.cluster)
 doParallel::registerDoParallel(cl = my.cluster)
 
 #list all the files in the main folder
-drive_ls("PIGU nestbox videos")
+list.files(pigufp)
 
 #1. pull out the box IDs for a year (currently using 2022 as a test)###########
 year <- "2022"
 
-boxIDs <- drive_ls(paste0("PIGU", year)) %>% 
-  arrange(name)
+boxIDs <- data.frame(name = list.files(file.path(pigufp, paste0("PIGU", year)))) %>% 
+  dplyr::filter(name != "desktop.ini") %>%
+  arrange(name) 
 
 #2.pull out the file names for each recording event for each box in the selected year###############
-revents <- foreach(i = 1:2,
-                   .packages = c("googledrive", "tidyverse"),
-                   .final = function(x) setNames(x, boxIDs$name[1:2])) %dopar%{ #need to update for full dataset
+revents <- foreach(i = 1:nrow(boxIDs),
+                   .packages = c("tidyverse"),
+                   .final = function(x) setNames(x, boxIDs$name)) %do%{ 
                      
-                     temp <- drive_ls(boxIDs[i,]) %>% 
-                       dplyr::filter(name != ".acrosync") %>%
+                     temp <- data.frame(name = list.files(file.path(pigufp, paste0("PIGU", year), boxIDs[i,]))) %>% 
+                       dplyr::filter(name != "desktop.ini") %>%
                        arrange(name)
                      
                      return(temp)
                      
                    }
 
+rm(temp, i)
+
 #turn into a dataframe
 #this is the main dataframe that will be used to update the video datasheet
 maindf <- enframe(revents) %>%
   rename(boxID = name) %>%
   unnest(cols = c(boxID, value)) %>%
-  mutate(ID = paste0(boxID, "-", name)) 
+  mutate(ID = paste0(boxID, "/", name)) 
+
+rm(revents)
 
 ###########################
 # maindf <- maindf[1:10, ] #remove when running on full dataset
 ###########################
   
 #3.loop through each recording event for each nestbox and pull out info on video file names#### 
-system.time({
-
 vids <- foreach(i = 1:nrow(maindf),
-                .packages = c("googledrive", "tidyverse"),
-                .final = function(x) setNames(x, maindf$ID)) %dopar%{ #need to update for full dataset
+                .packages = c("tidyverse"),
+                .final = function(x) setNames(x, maindf$ID)) %dopar%{ 
                   
                   
-                  tempvids <- drive_ls(maindf[i, ]) %>%
-                    dplyr::select(name) %>%
+                  tempvids <- data.frame(name = list.files(file.path(pigufp, paste0("PIGU", year), maindf$ID[i]))) %>%
                     dplyr::filter(name != "metadata.txt") %>%
+                    dplyr::filter(name != "desktop.ini") %>%
                     arrange(name)
                   
                   if(nrow(tempvids) == 2) {
@@ -105,6 +111,7 @@ vids <- foreach(i = 1:nrow(maindf),
                   
                 }
 
+rm(tempvids, i)
 
 #stick video file names in a df --> will be joined with maindf
 vidsdf <- enframe(vids) %>%
@@ -118,16 +125,18 @@ rm(vids)
 
 #get df of text file locations
 txt <- foreach(i = 1:nrow(maindf),
-                .packages = c("googledrive", "tidyverse"),
-                .final = function(x) setNames(x, maindf$ID)) %dopar%{ #need to update for full dataset
+                .packages = c("tidyverse"),
+                .final = function(x) setNames(x, maindf$ID)) %dopar%{ 
                   
-                  temptxt <- drive_ls(maindf[i,]) %>%
+                  temptxt <- data.frame(name = list.files(file.path(pigufp, paste0("PIGU", year), maindf$ID[i])))%>%
                     dplyr::filter(name == "metadata.txt")
                   
                   
                   return(temptxt)
                   
                 }
+
+rm(temptxt, i)
 
 #make a txt file location df
 txtdf <- enframe(txt) %>%
@@ -137,16 +146,18 @@ txtdf <- enframe(txt) %>%
 
 #use the txt file location df to pull out the contents of the text files
 txtc <- foreach(i = 1:nrow(txtdf),
-                .packages = c("googledrive", "tidyverse", "stringr"),
-                .final = function(x) setNames(x, txtdf$ID)) %dopar%{ #need to update for full dataset
+                .packages = c("tidyverse", "stringr"),
+                .final = function(x) setNames(x, txtdf$ID)) %dopar%{ 
                   
-                  txtctemp <- drive_read_string(txtdf[i,])
+                  txtctemp <- data.frame(value = read_file(file.path(pigufp, paste0("PIGU", year),
+                                                                     txtdf$ID[i], txtdf$name[i])))
                   
                   return(txtctemp)
                   
-                  print(i)
                   
                 }
+
+rm(txtctemp)
 
 #make a df of each text files contents
 txtcdf <- enframe(txtc) %>%
@@ -186,4 +197,4 @@ maindf <- maindf %>%
 #7. save extracted data to a rds file
 saveRDS(maindf, file.path(outputbasepath, "data_working", paste0(year, "pigu_video_metadata.rds")))
   
-})
+
