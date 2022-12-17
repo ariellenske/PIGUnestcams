@@ -5,6 +5,9 @@
 #author: Ariel Lenske
 ###############################################################################
 
+##notes: to extract the metadata for a year of video data, change the value of year
+#in #1 and run script, results are output in #7 to an .rds file
+
 ##Packages
 library(tidyverse)
 library(stringr)
@@ -42,7 +45,7 @@ doParallel::registerDoParallel(cl = my.cluster)
 list.files(pigufp)
 
 #1. pull out the box IDs for a year (currently using 2022 as a test)###########
-year <- "2022"
+year <- "2021"
 
 boxIDs <- data.frame(name = list.files(file.path(pigufp, paste0("PIGU", year)))) %>% 
   dplyr::filter(name != "desktop.ini") %>%
@@ -111,8 +114,6 @@ vids <- foreach(i = 1:nrow(maindf),
                   
                 }
 
-rm(tempvids, i)
-
 #stick video file names in a df --> will be joined with maindf
 vidsdf <- enframe(vids) %>%
   rename(ID = name) %>%
@@ -136,8 +137,6 @@ txt <- foreach(i = 1:nrow(maindf),
                   
                 }
 
-rm(temptxt, i)
-
 #make a txt file location df
 txtdf <- enframe(txt) %>%
   rename(ID = name) %>%
@@ -157,7 +156,6 @@ txtc <- foreach(i = 1:nrow(txtdf),
                   
                 }
 
-rm(txtctemp)
 
 #make a df of each text files contents
 txtcdf <- enframe(txtc) %>%
@@ -167,7 +165,11 @@ txtcdf <- enframe(txtc) %>%
 rm(txt, txtc, txtdf)
 
 #split up text file contents into columns
-txtcdf <- txtcdf %>%
+test <- txtcdf %>%
+  mutate(datetime = str_extract(value, "Date: (.+) UTC"),
+         MCP9804atTS_Temperature = str_extract(value, "(?<=(MCP9804@TS) Temperature:).*(?= degC)"))
+  
+  
   separate(col = value, into = c("datetime", "MCP9804atTS_Temperature",
                                   "HDC2010atSENSO30A_Temperature", "HDC2010atSENSO30A_Humidity",
                                   "LPS22HBatSENSO30A_Temperature", "LPS22HBatSENSO30A_Pressure"), sep = "\n") %>%
