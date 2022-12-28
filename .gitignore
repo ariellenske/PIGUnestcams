@@ -5,3 +5,6 @@
 *.lnk
 *.xlsx
 *.txt
+data_processed
+data_working
+figs
