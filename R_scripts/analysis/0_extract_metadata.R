@@ -22,7 +22,11 @@ source("R_scripts/functions/outputs_loc.R")
 outputbasepath <- outputs_loc("PIGUnestcams_outputs")
 
 #set the path to the PIGU nestbox videos folder in your local google drive location
+#windows
 pigufp <- file.path("G:", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
+
+#mac
+pigufp <- file.path("~", "Google Drive", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
 
 #set up stuff for running things in parallel
 parallel::detectCores()
@@ -76,7 +80,7 @@ maindf <- enframe(revents) %>%
 rm(revents)
 
 ###########################
-# maindf <- maindf[1:10, ] #remove when running on full dataset
+maindf <- maindf[1:10, ] #remove when running on full dataset
 ###########################
   
 #3.loop through each recording event for each nestbox and pull out info on video file names#### 
@@ -165,23 +169,20 @@ txtcdf <- enframe(txtc) %>%
 rm(txt, txtc, txtdf)
 
 #split up text file contents into columns
-test <- txtcdf %>%
-  mutate(datetime = str_extract(value, "Date: (.+) UTC"),
-         MCP9804atTS_Temperature = str_extract(value, "(?<=(MCP9804@TS) Temperature:).*(?= degC)"))
-  
-  
-  separate(col = value, into = c("datetime", "MCP9804atTS_Temperature",
-                                  "HDC2010atSENSO30A_Temperature", "HDC2010atSENSO30A_Humidity",
-                                  "LPS22HBatSENSO30A_Temperature", "LPS22HBatSENSO30A_Pressure"), sep = "\n") %>%
-  mutate(datetime = str_remove(datetime, "^.*?\\: "),
-         MCP9804atTS_Temperature = str_remove(MCP9804atTS_Temperature, "^.*?\\: "),
-         HDC2010atSENSO30A_Temperature = str_remove(HDC2010atSENSO30A_Temperature, "^.*?\\: "),
-         HDC2010atSENSO30A_Humidity = str_remove(HDC2010atSENSO30A_Humidity, "^.*?\\: "),
-         LPS22HBatSENSO30A_Temperature = str_remove(LPS22HBatSENSO30A_Temperature, "^.*?\\: "),
-         LPS22HBatSENSO30A_Pressure = str_remove(LPS22HBatSENSO30A_Pressure, "^.*?\\: "))
+txtcdf<- txtcdf %>% 
+  mutate(value = str_replace_all(value, "[\n]" , "; "),
+         value = str_replace_all(value, "[()]", ""),
+         value = str_replace_all(value, "[@]", "_"))
+
+txtcdf <- txtcdf %>%
+  mutate(datetime_UTC = str_extract(value, "(?<=Date:)([^UTC;]+)"),
+         MCP9804atTS_Temperature_degC = str_extract(value, "(?<=MCP9804_TS Temperature:)([^degC;]+)"),
+         HDC2010atSENSO30A_Temperature_degC = str_extract(value, "(?<=HDC2010_SENSO30A Temperature:)([^degC;]+)"),
+         HDC2010atSENSO30A_Humidity_percent = str_extract(value, "(?<=HDC2010_SENSO30A Humidity:)([^%;]+)"),
+         LPS22HBatSENSO30A_Temperature_degC = str_extract(value, "(?<=LPS22HB_SENSO30A Temperature:)([^degC;]+)"),
+         LPS22HBatSENSO30A_Pressure_hPa = str_extract(value, "(?<=LPS22HB_SENSO30A Pressure:)([^hPa;]+)"))
 
 #5. add text file info and video file names to the main df
-
 maindf <- left_join(maindf, vidsdf) %>%
   left_join(., txtcdf) %>%
   mutate(year = year)
@@ -191,9 +192,10 @@ maindf <- left_join(maindf, vidsdf) %>%
 names(maindf)
 
 maindf <- maindf %>%
-  dplyr::select(boxID, year, video1_filename, video2_filename, datetime, MCP9804atTS_Temperature, 
-                HDC2010atSENSO30A_Temperature, HDC2010atSENSO30A_Humidity, LPS22HBatSENSO30A_Temperature,
-                LPS22HBatSENSO30A_Pressure) %>%
+  dplyr::select(boxID, year, video1_filename, video2_filename, datetime_UTC,
+                MCP9804atTS_Temperature_degC, HDC2010atSENSO30A_Temperature_degC, 
+                HDC2010atSENSO30A_Humidity_percent, LPS22HBatSENSO30A_Temperature_degC,
+                LPS22HBatSENSO30A_Pressure_hPa) %>%
   na_if("")
 
 #7. save extracted data to a rds file
