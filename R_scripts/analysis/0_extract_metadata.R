@@ -5,8 +5,13 @@
 #author: Ariel Lenske
 ###############################################################################
 
-##notes: to extract the metadata for a year of video data, change the value of year
+##notes: 
+
+#A) to extract the metadata for a year of video data, change the value of year
 #in #1 and run script, results are output in #7 to an .rds file
+
+#B) remember to set correct path in 0.1 and 0.2 --> comment out either the 
+#windows or mac line before running depending on the system your running the code on
 
 ##Packages
 library(tidyverse)
@@ -19,14 +24,14 @@ library(readr)
 source("R_scripts/functions/outputs_loc.R")
 source("R_scripts/functions/outputs_loc_mac.R")
 
-#set data output base path to the projects google drive output folder
+#0.1 set data output base path to the projects google drive output folder####
 # #windows
 # outputbasepath <- outputs_loc("PIGUnestcams_outputs")
 
 #mac
 outputbasepath <- outputs_loc_mac("PIGUnestcams_outputs")
 
-#set the path to the PIGU nestbox videos folder in your local google drive location
+#0.2 set the path to the PIGU nestbox videos folder in your local google drive location####
 # #windows
 # pigufp <- file.path("G:", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
 
