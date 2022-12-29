@@ -17,13 +17,18 @@ library(readr)
 
 #source functions
 source("R_scripts/functions/outputs_loc.R")
+source("R_scripts/functions/outputs_loc_mac.R")
 
 #set data output base path to the projects google drive output folder
-outputbasepath <- outputs_loc("PIGUnestcams_outputs")
+# #windows
+# outputbasepath <- outputs_loc("PIGUnestcams_outputs")
+
+#mac
+outputbasepath <- outputs_loc_mac("PIGUnestcams_outputs")
 
 #set the path to the PIGU nestbox videos folder in your local google drive location
-#windows
-pigufp <- file.path("G:", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
+# #windows
+# pigufp <- file.path("G:", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
 
 #mac
 pigufp <- file.path("~", "Google Drive", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
@@ -80,7 +85,7 @@ maindf <- enframe(revents) %>%
 rm(revents)
 
 ###########################
-maindf <- maindf[1:10, ] #remove when running on full dataset
+#maindf <- maindf[1:10, ] #remove when running on full dataset
 ###########################
   
 #3.loop through each recording event for each nestbox and pull out info on video file names#### 
@@ -199,6 +204,6 @@ maindf <- maindf %>%
   na_if("")
 
 #7. save extracted data to a rds file
-saveRDS(maindf, file.path(outputbasepath, "data_working", paste0(year, "pigu_video_metadata.rds")))
+saveRDS(maindf, file.path(outputbasepath, "data_working", paste0(year, "_pigu_video_metadata.rds")))
   
 
