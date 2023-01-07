@@ -25,20 +25,23 @@ source("R_scripts/functions/outputs_loc.R")
 source("R_scripts/functions/outputs_loc_mac.R")
 
 #0.1 set data output base path to the projects google drive output folder####
-# #windows
-# outputbasepath <- outputs_loc("PIGUnestcams_outputs")
+#windows
+outputbasepath <- outputs_loc("PIGUnestcams_outputs")
 
-#mac
-outputbasepath <- outputs_loc_mac("PIGUnestcams_outputs")
+# #mac
+# outputbasepath <- outputs_loc_mac("PIGUnestcams_outputs")
 
 #0.2 set the path to the PIGU nestbox videos folder in your local google drive location####
 # #windows
-# pigufp <- file.path("G:", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
+pigufp <- file.path("G:", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
 
-#mac
-pigufp <- file.path("~", "Google Drive", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
+# #mac
+# pigufp <- file.path("~", "Google Drive", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
 
-#set up stuff for running things in parallel
+#0.3 set the year you want to extract meta data for####
+year <- "2021"
+
+#0.4 set up stuff for running things in parallel####
 parallel::detectCores()
 
 n.cores <- parallel::detectCores() - 1
@@ -58,9 +61,7 @@ doParallel::registerDoParallel(cl = my.cluster)
 #list all the files in the main folder
 list.files(pigufp)
 
-#1. pull out the box IDs for a year (currently using 2022 as a test)###########
-year <- "2021"
-
+#1. pull out the box IDs for the specified year###########
 boxIDs <- data.frame(name = list.files(file.path(pigufp, paste0("PIGU", year)))) %>% 
   dplyr::filter(name != "desktop.ini") %>%
   arrange(name) 
@@ -90,7 +91,7 @@ maindf <- enframe(revents) %>%
 rm(revents)
 
 ###########################
-#maindf <- maindf[1:10, ] #remove when running on full dataset
+# maindf <- maindf[1:10, ] #remove when running on full dataset
 ###########################
   
 #3.loop through each recording event for each nestbox and pull out info on video file names#### 
@@ -185,30 +186,41 @@ txtcdf<- txtcdf %>%
          value = str_replace_all(value, "[@]", "_"))
 
 txtcdf <- txtcdf %>%
-  mutate(datetime_UTC = str_extract(value, "(?<=Date:)([^UTC;]+)"),
-         MCP9804atTS_Temperature_degC = str_extract(value, "(?<=MCP9804_TS Temperature:)([^degC;]+)"),
-         HDC2010atSENSO30A_Temperature_degC = str_extract(value, "(?<=HDC2010_SENSO30A Temperature:)([^degC;]+)"),
-         HDC2010atSENSO30A_Humidity_percent = str_extract(value, "(?<=HDC2010_SENSO30A Humidity:)([^%;]+)"),
-         LPS22HBatSENSO30A_Temperature_degC = str_extract(value, "(?<=LPS22HB_SENSO30A Temperature:)([^degC;]+)"),
-         LPS22HBatSENSO30A_Pressure_hPa = str_extract(value, "(?<=LPS22HB_SENSO30A Pressure:)([^hPa;]+)"))
+  mutate(datetime_UTC = as.POSIXct(str_extract(value, "(?<=Date:)([^UTC;]+)"), format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
+         MCP9804atTS_Temperature_degC = as.numeric(str_extract(value, "(?<=MCP9804_TS Temperature:)([^degC;]+)")),
+         HDC2010atSENSO30A_Temperature_degC = as.numeric(str_extract(value, "(?<=HDC2010_SENSO30A Temperature:)([^degC;]+)")),
+         HDC2010atSENSO30A_Humidity_percent = as.numeric(str_extract(value, "(?<=HDC2010_SENSO30A Humidity:)([^%;]+)")),
+         LPS22HBatSENSO30A_Temperature_degC = as.numeric(str_extract(value, "(?<=LPS22HB_SENSO30A Temperature:)([^degC;]+)")),
+         LPS22HBatSENSO30A_Pressure_hPa = as.numeric(str_extract(value, "(?<=LPS22HB_SENSO30A Pressure:)([^hPa;]+)")))
 
-#5. add text file info and video file names to the main df
+#5. add text file info and video file 'names' column to the main df
 maindf <- left_join(maindf, vidsdf) %>%
   left_join(., txtcdf) %>%
   mutate(year = year)
+
+#6. fill in missing datetimes based on name column
+maindf <- maindf %>%
+  mutate(dt_from_name = paste0(str_sub(name, 1, 4), "-",
+                               str_sub(name, 5, 6), "-",
+                               str_sub(name, 7, 8), " ",
+                               str_sub(name, 10, 11), ":",
+                               str_sub(name, 12, 13), ":",
+                               str_sub(name, 14, 15)),
+         dt_from_name = as.POSIXct(dt_from_name, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
+         datetime_UTC = if_else(is.na(datetime_UTC), dt_from_name, datetime_UTC))
   
   
-#6. select relevant columns 
+#7. select relevant columns 
 names(maindf)
 
 maindf <- maindf %>%
   dplyr::select(boxID, year, video1_filename, video2_filename, datetime_UTC,
                 MCP9804atTS_Temperature_degC, HDC2010atSENSO30A_Temperature_degC, 
                 HDC2010atSENSO30A_Humidity_percent, LPS22HBatSENSO30A_Temperature_degC,
-                LPS22HBatSENSO30A_Pressure_hPa) %>%
-  na_if("")
+                LPS22HBatSENSO30A_Pressure_hPa) 
 
-#7. save extracted data to a rds file
+
+#8. save extracted data to a rds file
 saveRDS(maindf, file.path(outputbasepath, "data_working", paste0(year, "_pigu_video_metadata.rds")))
   
 
