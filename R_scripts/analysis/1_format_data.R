@@ -26,7 +26,7 @@ outputbasepath <- outputs_loc("PIGUnestcams_outputs")
 year <- "2021"
 
 #1. download a copy of the datasheet from google drive and read into R####
-drive_download(file = "PIGU_nestbox_video_data.xlsx",
+drive_download(file = "PIGU_data_template_do_not_edit.xlsx",
                path = "data_raw/PIGU_nestbox_video_data_temp.xlsx", overwrite = TRUE)
 
 #read in master datasheet
@@ -55,10 +55,10 @@ ds <- bind_rows(meta, ds)
 #4. write updated datasheet to the workbook as a data table
 wb <- loadWorkbook("data_raw/PIGU_nestbox_video_data_temp.xlsx", xlsxFile = NULL, isUnzipped = FALSE)
 
-addWorksheet(wb, "data_updated")
+addWorksheet(wb, year)
 
 #write the data table
-writeDataTable(wb, "data_updated", x = ds,
+writeDataTable(wb, year, x = ds,
                tableStyle = "none")
 
 #5. add data validation
@@ -72,7 +72,7 @@ for(i in 1:length(nr)) {
 
   x <- cn %>% dplyr::filter(cname == nr[i])
 
-  dataValidation(wb, "data_updated", col = x$cpos, rows = 2:nrow(meta), type = "list", value = x$cname)
+  dataValidation(wb, year, col = x$cpos, rows = 2:nrow(meta), type = "list", value = x$cname)
 
 }
 rm(i)
@@ -82,7 +82,7 @@ rm(i)
 v1 <- c("IF(AND($C2=\"-\", $D2=\"-\"),\"NA\", IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), ISNUMBER(SEARCH(\"unusable\", $L2))), \"cannot determine\", \"\"))") 
 
 for(i in c(13:17,23)){
-  writeFormula(wb, sheet = "data_updated", x = v1, startCol = i, startRow = 2)
+  writeFormula(wb, sheet = year, x = v1, startCol = i, startRow = 2)
 }
 rm(i)
 
@@ -90,7 +90,7 @@ rm(i)
 v2 <- c("IF(AND($C2=\"-\", $D2=\"-\"),\"NA\", IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), ISNUMBER(SEARCH(\"unusable\", $L2))), \"cannot determine\", IF(ISBLANK($Q2), \"\", IF($Q2=0, \"NA\", \"\"))))")
 
 for(i in 18:19){
-  writeFormula(wb, sheet = "data_updated", x = v1, startCol = i, startRow = 2)
+  writeFormula(wb, sheet = year, x = v2, startCol = i, startRow = 2)
 }
 rm(i)
 
@@ -98,22 +98,24 @@ rm(i)
 v3 <- c("IF(AND($C2=\"-\", $D2=\"-\"),\"NA\", IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), ISNUMBER(SEARCH(\"unusable\", $L2))), \"cannot determine\", IF(ISBLANK($Q2), \"\", IF($Q2<2, \"NA\", \"\"))))")
 
 for(i in 20:21){
-  writeFormula(wb, sheet = "data_updated", x = v1, startCol = i, startRow = 2)
+  writeFormula(wb, sheet = year, x = v3, startCol = i, startRow = 2)
 }
 rm(i)
 
 ##chick_activity
 v4 <- c("IF(AND($C2=\"-\", $D2=\"-\"),\"NA\", IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), ISNUMBER(SEARCH(\"unusable\", $L2))), \"cannot determine\", IF(ISBLANK($P2), \"\", IF($P2=0, \"NA\", \"\"))))")
 
-writeFormula(wb, sheet = "data_updated", x = v1, startCol = 22, startRow = 2)
+writeFormula(wb, sheet = year, x = v4, startCol = 22, startRow = 2)
 
 ##fishSpecies
 v5 <- c("IF(AND($C2=\"-\", $D2=\"-\"),\"NA\", IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), ISNUMBER(SEARCH(\"unusable\", $L2))), \"cannot determine\", IF($W2 = \"no\",  \"NA\", \"\")))")
 
-writeFormula(wb, sheet = "data_updated", x = v1, startCol = 24, startRow = 2)
+writeFormula(wb, sheet = year, x = v5, startCol = 24, startRow = 2)
 
+#7. remove data worksheet
+removeWorksheet(wb, sheet = "data")
 
-#7. save updated workbook
+#8. save updated workbook
 saveWorkbook(wb,
              file.path(outputbasepath, "data_processed", "PIGU_nestbox_video_data_temp.xlsx"),
              overwrite = TRUE)
