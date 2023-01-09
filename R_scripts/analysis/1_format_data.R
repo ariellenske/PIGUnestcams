@@ -117,6 +117,6 @@ removeWorksheet(wb, sheet = "data")
 
 #8. save updated workbook
 saveWorkbook(wb,
-             file.path(outputbasepath, "data_processed", "PIGU_nestbox_video_data_temp.xlsx"),
+             file.path(outputbasepath, "data_processed", paste0("PIGU_nestbox_video_data_", year, ".xlsx")),
              overwrite = TRUE)
 
