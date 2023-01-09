@@ -187,11 +187,11 @@ txtcdf<- txtcdf %>%
 
 txtcdf <- txtcdf %>%
   mutate(datetime_UTC = as.POSIXct(str_extract(value, "(?<=Date:)([^UTC;]+)"), format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
-         MCP9804atTS_Temperature_degC = as.numeric(str_extract(value, "(?<=MCP9804_TS Temperature:)([^degC;]+)")),
-         HDC2010atSENSO30A_Temperature_degC = as.numeric(str_extract(value, "(?<=HDC2010_SENSO30A Temperature:)([^degC;]+)")),
-         HDC2010atSENSO30A_Humidity_percent = as.numeric(str_extract(value, "(?<=HDC2010_SENSO30A Humidity:)([^%;]+)")),
-         LPS22HBatSENSO30A_Temperature_degC = as.numeric(str_extract(value, "(?<=LPS22HB_SENSO30A Temperature:)([^degC;]+)")),
-         LPS22HBatSENSO30A_Pressure_hPa = as.numeric(str_extract(value, "(?<=LPS22HB_SENSO30A Pressure:)([^hPa;]+)")))
+         MCP9804atTS_Temperature_degC = str_extract(value, "(?<=MCP9804_TS Temperature:)([^degC;]+)"),
+         HDC2010atSENSO30A_Temperature_degC = str_extract(value, "(?<=HDC2010_SENSO30A Temperature:)([^degC;]+)"),
+         HDC2010atSENSO30A_Humidity_percent = str_extract(value, "(?<=HDC2010_SENSO30A Humidity:)([^%;]+)"),
+         LPS22HBatSENSO30A_Temperature_degC = str_extract(value, "(?<=LPS22HB_SENSO30A Temperature:)([^degC;]+)"),
+         LPS22HBatSENSO30A_Pressure_hPa = str_extract(value, "(?<=LPS22HB_SENSO30A Pressure:)([^hPa;]+)"))
 
 #5. add text file info and video file 'names' column to the main df
 maindf <- left_join(maindf, vidsdf) %>%
