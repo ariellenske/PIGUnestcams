@@ -79,38 +79,74 @@ rm(i)
 
 #6. add autofill formulas
 #videoTrigger (column 13), nestStage (column 14), number_of_eggs (column 15), number_of_chicks (column 16), number_of_adults (column 17), fishPresent (23)
-v1 <- c("IF(AND($C2=\"-\", $D2=\"-\"),\"NA\", IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), ISNUMBER(SEARCH(\"unusable\", $L2))), \"cannot determine\", \"\"))") 
+# v1 <- c("IF(AND($C2=\"-\", $D2=\"-\"),\"NA\", IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), ISNUMBER(SEARCH(\"unusable\", $L2))), \"cannot determine\", \"\"))") 
+
+v1 <- c("IF(OR($K2=\"test video\", $L2=\"test video\"), \"NA\", 
+        IF(AND($C2=\"-\", $D2=\"-\"), \"NA\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), ISNUMBER(SEARCH(\"unusable\",$L2))), \"cannot determine\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), $C2=\"-\"), \"cannot determine\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), $D2=\"-\"), \"cannot determine\", \"\")))))")
 
 for(i in c(13:17,23)){
   writeFormula(wb, sheet = year, x = v1, startCol = i, startRow = 2)
 }
 rm(i)
 
-#parent1_ID, #parent1_activity
-v2 <- c("IF(AND($C2=\"-\", $D2=\"-\"),\"NA\", IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), ISNUMBER(SEARCH(\"unusable\", $L2))), \"cannot determine\", IF(ISBLANK($Q2), \"\", IF($Q2=0, \"NA\", \"\"))))")
+#parent1_ID (column 18), #parent1_activity (column 19)
+v2 <- c("IF(OR($K2=\"test video\", $L2=\"test video\"), \"NA\", 
+        IF(AND($C2=\"-\", $D2=\"-\"), \"NA\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), ISNUMBER(SEARCH(\"unusable\",$L2))), \"cannot determine\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), $C2=\"-\"), \"cannot determine\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), $D2=\"-\"), \"cannot determine\", 
+        IF(ISBLANK($Q2), \"\", IF($Q2=0, \"NA\", \"\")))))))")
 
 for(i in 18:19){
   writeFormula(wb, sheet = year, x = v2, startCol = i, startRow = 2)
 }
 rm(i)
 
-##parent2_ID, #parent2_activity
-v3 <- c("IF(AND($C2=\"-\", $D2=\"-\"),\"NA\", IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), ISNUMBER(SEARCH(\"unusable\", $L2))), \"cannot determine\", IF(ISBLANK($Q2), \"\", IF($Q2<2, \"NA\", \"\"))))")
+##parent2_ID (column 20), #parent2_activity (column 21)
+v3 <- c("IF(OR($K2=\"test video\", $L2=\"test video\"), \"NA\", 
+        IF(AND($C2=\"-\", $D2=\"-\"), \"NA\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), ISNUMBER(SEARCH(\"unusable\",$L2))), \"cannot determine\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), $C2=\"-\"), \"cannot determine\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), $D2=\"-\"), \"cannot determine\", 
+        IF(ISBLANK($Q2), \"\", IF($Q2<2, \"NA\", \"\")))))))")
+
 
 for(i in 20:21){
   writeFormula(wb, sheet = year, x = v3, startCol = i, startRow = 2)
 }
 rm(i)
 
-##chick_activity
-v4 <- c("IF(AND($C2=\"-\", $D2=\"-\"),\"NA\", IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), ISNUMBER(SEARCH(\"unusable\", $L2))), \"cannot determine\", IF(ISBLANK($P2), \"\", IF($P2=0, \"NA\", \"\"))))")
+##chick_activity (column 22)
+v4 <- c("IF(OR($K2=\"test video\", $L2=\"test video\"), \"NA\", 
+        IF(AND($C2=\"-\", $D2=\"-\"), \"NA\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), ISNUMBER(SEARCH(\"unusable\",$L2))), \"cannot determine\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), $C2=\"-\"), \"cannot determine\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), $D2=\"-\"), \"cannot determine\", 
+        IF(ISBLANK($P2), \"\", IF($P2=0, \"NA\", \"\")))))))")
+
 
 writeFormula(wb, sheet = year, x = v4, startCol = 22, startRow = 2)
 
-##fishSpecies
-v5 <- c("IF(AND($C2=\"-\", $D2=\"-\"),\"NA\", IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), ISNUMBER(SEARCH(\"unusable\", $L2))), \"cannot determine\", IF($W2 = \"no\",  \"NA\", \"\")))")
+##fishSpecies (column 24)
+v5 <- c("IF(OR($K2=\"test video\", $L2=\"test video\"), \"NA\", 
+        IF(AND($C2=\"-\", $D2=\"-\"), \"NA\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), ISNUMBER(SEARCH(\"unusable\",$L2))), \"cannot determine\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), $C2=\"-\"), \"cannot determine\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), $D2=\"-\"), \"cannot determine\", 
+        IF($W2 = \"no\",  \"NA\", \"\"))))))")
 
 writeFormula(wb, sheet = year, x = v5, startCol = 24, startRow = 2)
+
+#video_quality1 (column 11)
+v6 <- c("=IF($C2=\"-\", \"video missing\", \"\")")
+writeFormula(wb, sheet = year, x = v6, startCol = 11, startRow = 2)
+
+#video_quality1 (column 11)
+v7 <- c("=IF($D2=\"-\", \"video missing\", \"\")")
+writeFormula(wb, sheet = year, x = v7, startCol = 12, startRow = 2)
 
 #7. remove data worksheet
 removeWorksheet(wb, sheet = "data")
