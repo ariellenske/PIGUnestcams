@@ -78,8 +78,7 @@ for(i in 1:length(nr)) {
 rm(i)
 
 #6. add autofill formulas
-#videoTrigger (column 13), nestStage (column 14), number_of_eggs (column 15), number_of_chicks (column 16), number_of_adults (column 17), fishPresent (23)
-# v1 <- c("IF(AND($C2=\"-\", $D2=\"-\"),\"NA\", IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), ISNUMBER(SEARCH(\"unusable\", $L2))), \"cannot determine\", \"\"))") 
+#videoTrigger (column 13), nestStage (column 14), number_of_adults (column 17), fishPresent (23)
 
 v1 <- c("IF(OR($K2=\"test video\", $L2=\"test video\"), \"NA\", 
         IF(AND($C2=\"-\", $D2=\"-\"), \"NA\", 
@@ -87,7 +86,7 @@ v1 <- c("IF(OR($K2=\"test video\", $L2=\"test video\"), \"NA\",
         IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), $C2=\"-\"), \"cannot determine\", 
         IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), $D2=\"-\"), \"cannot determine\", \"\")))))")
 
-for(i in c(13:17,23)){
+for(i in c(13:14,17,23)){
   writeFormula(wb, sheet = year, x = v1, startCol = i, startRow = 2)
 }
 rm(i)
@@ -140,13 +139,27 @@ v5 <- c("IF(OR($K2=\"test video\", $L2=\"test video\"), \"NA\",
 
 writeFormula(wb, sheet = year, x = v5, startCol = 24, startRow = 2)
 
-#video_quality1 (column 11)
-v6 <- c("=IF($C2=\"-\", \"video missing\", \"\")")
-writeFormula(wb, sheet = year, x = v6, startCol = 11, startRow = 2)
+#number_of_eggs (column 15), number_of_chicks (column 16)
+v6 <- c("IF(OR($K2=\"test video\", $L2=\"test video\"), \"NA\", 
+        IF(AND($C2=\"-\", $D2=\"-\"), \"NA\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), ISNUMBER(SEARCH(\"unusable\",$L2))), \"cannot determine\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\",$K2)), $C2=\"-\"), \"cannot determine\", 
+        IF(AND(ISNUMBER(SEARCH(\"unusable\", $K2)), $D2=\"-\"), \"cannot determine\", 
+        IF($N2=\"empty\", 0, \"\"))))))")
+
+for(i in c(15:16)){
+  writeFormula(wb, sheet = year, x = v6, startCol = i, startRow = 2)
+}
+rm(i)
+
 
 #video_quality1 (column 11)
-v7 <- c("=IF($D2=\"-\", \"video missing\", \"\")")
-writeFormula(wb, sheet = year, x = v7, startCol = 12, startRow = 2)
+v7 <- c("IF($C2=\"-\", \"video missing\", \"\")")
+writeFormula(wb, sheet = year, x = v7, startCol = 11, startRow = 2)
+
+#video_quality2 (column 12)
+v8 <- c("IF($D2=\"-\", \"video missing\", \"\")")
+writeFormula(wb, sheet = year, x = v8, startCol = 12, startRow = 2)
 
 #7. remove data worksheet
 removeWorksheet(wb, sheet = "data")
