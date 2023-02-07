@@ -1,6 +1,6 @@
 ###############################################################################
 #project: PIGU nestcam datasheet autofill
-#0. extract video metadata
+#1. extract video metadata
 #date: Dec 2, 2022
 #author: Ariel Lenske
 ###############################################################################
