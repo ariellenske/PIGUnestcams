@@ -33,7 +33,7 @@ outputbasepath <- outputs_loc("PIGUnestcams_outputs")
 
 #0.2 set the path to the PIGU nestbox videos folder in your local google drive location####
 # #windows
-pigufp <- file.path("G:", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
+pigufp <- file.path("G:", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos", "PIGU nestbox video data")
 
 # #mac
 # pigufp <- file.path("~", "Google Drive", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
@@ -41,7 +41,10 @@ pigufp <- file.path("G:", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox
 #0.3 set the year you want to extract meta data for####
 year <- "2021"
 
-#0.4 set up stuff for running things in parallel####
+#0.4 set the project you want to extract meta data for####
+site <- "EastLimestone"
+
+#0.5 set up stuff for running things in parallel####
 parallel::detectCores()
 
 n.cores <- parallel::detectCores() - 1
@@ -61,9 +64,12 @@ doParallel::registerDoParallel(cl = my.cluster)
 #list all the files in the main folder
 list.files(pigufp)
 
+#list all the files in the project folder for the year of interest
+list.files(file.path(pigufp, site, paste0(year, "_deployments")))
+
 #1. pull out the box IDs for the specified year###########
-boxIDs <- data.frame(name = list.files(file.path(pigufp, paste0("PIGU", year)))) %>% 
-  dplyr::filter(name != "desktop.ini") %>%
+boxIDs <- data.frame(name = list.files(file.path(pigufp, site, paste0(year, "_deployments")))) %>% 
+  dplyr::filter(str_detect(name, "Unit")) %>%
   arrange(name) 
 
 #2.pull out the file names for each recording event for each box in the selected year###############
@@ -71,7 +77,7 @@ revents <- foreach(i = 1:nrow(boxIDs),
                    .packages = c("tidyverse"),
                    .final = function(x) setNames(x, boxIDs$name)) %do%{ 
                      
-                     temp <- data.frame(name = list.files(file.path(pigufp, paste0("PIGU", year), boxIDs[i,]))) %>% 
+                     temp <- data.frame(name = list.files(file.path(pigufp, site, paste0(year, "_deployments"), boxIDs[i,]))) %>% 
                        dplyr::filter(name != "desktop.ini") %>%
                        arrange(name)
                      
@@ -100,7 +106,7 @@ vids <- foreach(i = 1:nrow(maindf),
                 .final = function(x) setNames(x, maindf$ID)) %dopar%{ 
                   
                   
-                  tempvids <- data.frame(name = list.files(file.path(pigufp, paste0("PIGU", year), maindf$ID[i]))) %>%
+                  tempvids <- data.frame(name = list.files(file.path(pigufp, site, paste0(year, "_deployments"), maindf$ID[i]))) %>%
                     dplyr::filter(name != "metadata.txt") %>%
                     dplyr::filter(name != "desktop.ini") %>%
                     arrange(name)
@@ -144,7 +150,7 @@ txt <- foreach(i = 1:nrow(maindf),
                 .packages = c("tidyverse"),
                 .final = function(x) setNames(x, maindf$ID)) %dopar%{ 
                   
-                  temptxt <- data.frame(name = list.files(file.path(pigufp, paste0("PIGU", year), maindf$ID[i])))%>%
+                  temptxt <- data.frame(name = list.files(file.path(pigufp, site, paste0(year, "_deployments"), maindf$ID[i])))%>%
                     dplyr::filter(name == "metadata.txt")
                   
                   
@@ -163,7 +169,7 @@ txtc <- foreach(i = 1:nrow(txtdf),
                 .packages = c("tidyverse", "stringr"),
                 .final = function(x) setNames(x, txtdf$ID)) %dopar%{ 
                   
-                  txtctemp <- data.frame(value = read_file(file.path(pigufp, paste0("PIGU", year),
+                  txtctemp <- data.frame(value = read_file(file.path(pigufp, site, paste0(year, "_deployments"),
                                                                      txtdf$ID[i], txtdf$name[i])))
                   
                   return(txtctemp)
