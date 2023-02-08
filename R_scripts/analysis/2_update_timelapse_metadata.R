@@ -82,7 +82,14 @@ dbnew <- dbnew %>%
 #8. reorder columns in dbnew to match order in db
 dbnew <- dbnew[names(db)]
 
-#9. save updated database as a csv for upload to timelapse
+#9. select the metadata and file info columns
+dbnew <- dbnew %>% 
+  dplyr::select(File, RelativePath, DeleteFlag, boxID, year, DateTime,
+                MCP9804atTS_Temperature_degC, HDC2010atSENSO30A_Temperature_degC,
+                HDC2010atSENSO30A_Humidity_percent, LPS22HBatSENSO30A_Temperature_degC,
+                LPS22HBatSENSO30A_Pressure_hPa)
+
+#10. save updated database as a csv for upload to timelapse
 write_csv(dbnew, file.path(outputbasepath, "data_processed",
                            paste0("TimelapseDatabase_", site, "_PIGUvideos_", year, "_metadata_update.csv")))
 
