@@ -21,7 +21,7 @@ outputbasepath <- outputs_loc("PIGUnestcams_outputs")
 # outputbasepath <- outputs_loc_mac("PIGUnestcams_outputs")
 
 #0.2 set the year you want to extract meta data for####
-year <- "2021"
+year <- "2022"
 
 #0.3 set the study site you want to extract meta data for####
 site <- "EastLimestone"
@@ -60,36 +60,45 @@ meta <- readRDS(file.path(outputbasepath, "data_working", paste0(year, "_pigu_vi
 
 #4. pivot metadata to long format to match the database and remove missing video file rows
 meta <- meta %>%
-  pivot_longer(cols = c(video1_filename, video2_filename),
-               names_to = "File_num",
-               values_to = "File") %>%
-  dplyr::filter(!is.na(File)) %>%
+  pivot_longer(cols = c(video1_filename, video2_filename, video1_quality, video2_quality),
+               names_to = c("File_num", ".value"),
+               names_pattern = "(.+)_(.+)") %>%
+  dplyr::filter(!is.na(filename)) %>%
   dplyr::select(-File_num) %>%
-  rename(DateTime = datetime_UTC)
+  rename(DateTime = datetime_UTC,
+         video_quality = quality,
+         File = filename) 
 
-#5. remove overlapping columns from the database
+#5. update video_quality db column based on file size info
+vq <- left_join(meta, 
+                db %>% dplyr::select(RootFolder, File, RelativePath, boxID, video_quality) %>%
+                  rename(video_qualitydb = video_quality))
+
+
+#6. remove overlapping columns from the database
 dbs <- db %>% dplyr::select(-year, -DateTime, -MCP9804atTS_Temperature_degC,
                      -HDC2010atSENSO30A_Temperature_degC, -HDC2010atSENSO30A_Humidity_percent,
-                     -LPS22HBatSENSO30A_Temperature_degC, -LPS22HBatSENSO30A_Pressure_hPa)
+                     -LPS22HBatSENSO30A_Temperature_degC, -LPS22HBatSENSO30A_Pressure_hPa,
+                     -video_quality)
 
-#6. merge database with metadata to fill in relevant data
+#7. merge database with metadata to fill in relevant data
 dbnew <- left_join(dbs, meta) 
 
-#7. convert DateTime column to character
+#8. convert DateTime column to character
 dbnew <- dbnew %>%
   mutate(DateTime = as.character(DateTime))
 
-#8. reorder columns in dbnew to match order in db
+#9. reorder columns in dbnew to match order in db
 dbnew <- dbnew[names(db)]
 
-#9. select the metadata and file info columns
+#10. select the metadata and file info columns
 dbnew <- dbnew %>% 
   dplyr::select(File, RelativePath, DeleteFlag, boxID, year, DateTime,
                 MCP9804atTS_Temperature_degC, HDC2010atSENSO30A_Temperature_degC,
                 HDC2010atSENSO30A_Humidity_percent, LPS22HBatSENSO30A_Temperature_degC,
-                LPS22HBatSENSO30A_Pressure_hPa)
+                LPS22HBatSENSO30A_Pressure_hPa, video_quality)
 
-#10. save updated database as a csv for upload to timelapse
+#11. save updated database as a csv for upload to timelapse
 write_csv(dbnew, file.path(outputbasepath, "data_processed",
                            paste0("TimelapseDatabase_", site, "_PIGUvideos_", year, "_metadata_update.csv")))
 
