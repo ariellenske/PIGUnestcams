@@ -39,7 +39,7 @@ pigufp <- file.path("G:", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox
 # pigufp <- file.path("~", "Google Drive", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
 
 #0.3 set the year you want to extract meta data for####
-year <- "2021"
+year <- "2022"
 
 #0.4 set the project you want to extract meta data for####
 site <- "EastLimestone"
@@ -214,13 +214,63 @@ maindf <- maindf %>%
                                str_sub(name, 14, 15)),
          dt_from_name = as.POSIXct(dt_from_name, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
          datetime_UTC = if_else(is.na(datetime_UTC), dt_from_name, datetime_UTC))
-  
-  
-#7. select relevant columns 
+
+#7. extract file size info for each video and set video quality column for 0 mb files to 'unsusable - video error'
+
+#make df with the video file names and path info
+sizedf <- vidsdf
+
+#use the video file location df to pull out the file sizes
+#video file #1s
+size1 <- foreach(i = 1:nrow(sizedf),
+                .packages = c("tidyverse", "stringr"),
+                .final = function(x) setNames(x, sizedf$ID)) %dopar%{ 
+                  
+                  sizetemp <- data.frame(value = file.size(file.path(pigufp, site, paste0(year, "_deployments"),
+                                                                     sizedf$ID[i], sizedf$video1_filename[i])))
+                  
+                  return(sizetemp)
+                  
+                }
+
+#make a df of each videos file size and add video 'quality' column
+vq1 <- enframe(size1) %>%
+  rename(ID = name) %>%
+  unnest(cols = c(ID, value)) %>%
+  mutate(video1_quality = if_else(value == 0, "unusable - video error", "")) %>%
+  dplyr::select(-value)
+
+#video file #2s
+size2 <- foreach(i = 1:nrow(sizedf),
+                  .packages = c("tidyverse", "stringr"),
+                  .final = function(x) setNames(x, sizedf$ID)) %dopar%{ 
+                    
+                    sizetemp <- data.frame(value = file.size(file.path(pigufp, site, paste0(year, "_deployments"),
+                                                                        sizedf$ID[i], sizedf$video2_filename[i])))
+                    
+                    return(sizetemp)
+                    
+                  }
+
+#make a df of each videos file size and add video 'quality' column
+vq2 <- enframe(size2) %>%
+  rename(ID = name) %>%
+  unnest(cols = c(ID, value)) %>%
+  mutate(video2_quality = if_else(value == 0, "unusable - video error", "")) %>%
+  dplyr::select(-value)
+
+rm(sizedf, size1, size2)
+
+
+#8.add video quality columns to the main df
+maindf <- left_join(maindf, vq1) %>%
+  left_join(., vq2) 
+
+#9. select relevant columns 
 names(maindf)
 
 maindf <- maindf %>%
-  dplyr::select(boxID, year, video1_filename, video2_filename, datetime_UTC,
+  dplyr::select(boxID, year, video1_filename, video2_filename, video1_quality, video2_quality, datetime_UTC,
                 MCP9804atTS_Temperature_degC, HDC2010atSENSO30A_Temperature_degC, 
                 HDC2010atSENSO30A_Humidity_percent, LPS22HBatSENSO30A_Temperature_degC,
                 LPS22HBatSENSO30A_Pressure_hPa) 
