@@ -14,16 +14,12 @@ source("R_scripts/functions/outputs_loc.R")
 source("R_scripts/functions/outputs_loc_mac.R")
 
 #0.1 set data output base path to the projects google drive output folder####
-#windows
 outputbasepath <- outputs_loc("PIGUnestcams_outputs")
 
-# #mac
-# outputbasepath <- outputs_loc_mac("PIGUnestcams_outputs")
+#0.2 set the year you want to update meta data for####
+year <- "2023"
 
-#0.2 set the year you want to extract meta data for####
-year <- "2022"
-
-#0.3 set the study site you want to extract meta data for####
+#0.3 set the study site you want to update meta data for####
 site <- "EastLimestone"
 
 #1. download a copy of the Timelapse database in csv form from google drive and read into R####
@@ -54,7 +50,7 @@ db <- db %>%
   mutate(boxID = str_extract(RelativePath, "[^\\\\]+"))
 
 
-#3. read in a year of metadata extracting using script 1
+#3. read in the year of metadata extracting using script 1
 meta <- readRDS(file.path(outputbasepath, "data_working", paste0(year, "_pigu_video_metadata.rds")))
 
 
@@ -70,9 +66,12 @@ meta <- meta %>%
          File = filename) 
 
 #5. update video_quality db column based on file size info
-vq <- left_join(meta, 
+meta <- left_join(meta, 
                 db %>% dplyr::select(RootFolder, File, RelativePath, boxID, video_quality) %>%
-                  rename(video_qualitydb = video_quality))
+                  rename(video_qualitydb = video_quality)) %>%
+  mutate(video_quality = ifelse(video_quality == "", video_qualitydb, video_quality)) %>%
+  dplyr::select(-video_qualitydb) 
+  
 
 
 #6. remove overlapping columns from the database
@@ -92,14 +91,25 @@ dbnew <- dbnew %>%
 dbnew <- dbnew[names(db)]
 
 #10. select the metadata and file info columns
-dbnew <- dbnew %>% 
+dbnew_vq <- dbnew %>% 
   dplyr::select(File, RelativePath, DeleteFlag, boxID, year, DateTime,
                 MCP9804atTS_Temperature_degC, HDC2010atSENSO30A_Temperature_degC,
                 HDC2010atSENSO30A_Humidity_percent, LPS22HBatSENSO30A_Temperature_degC,
-                LPS22HBatSENSO30A_Pressure_hPa, video_quality)
+                LPS22HBatSENSO30A_Pressure_hPa, video_quality) %>%
+  dplyr::filter(!is.na(video_quality))
+
+dbnew_nvq <- dbnew %>% 
+  dplyr::select(File, RelativePath, DeleteFlag, boxID, year, DateTime,
+                MCP9804atTS_Temperature_degC, HDC2010atSENSO30A_Temperature_degC,
+                HDC2010atSENSO30A_Humidity_percent, LPS22HBatSENSO30A_Temperature_degC,
+                LPS22HBatSENSO30A_Pressure_hPa) 
+  
 
 #11. save updated database as a csv for upload to timelapse
-write_csv(dbnew, file.path(outputbasepath, "data_processed",
-                           paste0("TimelapseDatabase_", site, "_PIGUvideos_", year, "_metadata_update.csv")))
+write_csv(dbnew_vq, file.path(outputbasepath, "data_processed",
+                           paste0("TimelapseDatabase_", site, "_PIGUvideos_", year, "_metadata_update_file1.csv")))
+
+write_csv(dbnew_nvq, file.path(outputbasepath, "data_processed",
+                              paste0("TimelapseDatabase_", site, "_PIGUvideos_", year, "_metadata_update_file2.csv")))
 
 

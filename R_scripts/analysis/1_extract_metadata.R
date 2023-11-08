@@ -22,24 +22,16 @@ library(readr)
 
 #source functions
 source("R_scripts/functions/outputs_loc.R")
-source("R_scripts/functions/outputs_loc_mac.R")
 
 #0.1 set data output base path to the projects google drive output folder####
-#windows
 outputbasepath <- outputs_loc("PIGUnestcams_outputs")
-
-# #mac
-# outputbasepath <- outputs_loc_mac("PIGUnestcams_outputs")
 
 #0.2 set the path to the PIGU nestbox videos folder in your local google drive location####
 # #windows
 pigufp <- file.path("G:", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos", "PIGU nestbox video data")
 
-# #mac
-# pigufp <- file.path("~", "Google Drive", "My Drive", "ECCC work", "Data", "PIGU", "PIGU nestbox videos")
-
 #0.3 set the year you want to extract meta data for####
-year <- "2022"
+year <- "2023"
 
 #0.4 set the project you want to extract meta data for####
 site <- "EastLimestone"
@@ -215,7 +207,7 @@ maindf <- maindf %>%
          dt_from_name = as.POSIXct(dt_from_name, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
          datetime_UTC = if_else(is.na(datetime_UTC), dt_from_name, datetime_UTC))
 
-#7. extract file size info for each video and set video quality column for 0 mb files to 'unsusable - video error'
+#7. extract file size info for each video and set video quality column for 0 mb files to 'unusable - video error'
 
 #make df with the video file names and path info
 sizedf <- vidsdf
